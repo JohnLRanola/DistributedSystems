@@ -29,31 +29,53 @@ public class Client {
         System.out.println("Food products: " + response);
     }
 
+    public void showMenu() {
+        System.out.println("1. Connect to server");
+        System.out.println("2. Disconnect from server");
+        System.out.println("3. Get list of food products");
+        System.out.println("4. Exit");
+    }
+
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
         Client client = new Client("localhost", 1234);
         boolean isConnected = false;
 
         while (true) {
-            System.out.println("1. Connect to server");
-            System.out.println("2. Disconnect from server");
-            System.out.println("3. Get list of food products");
+            client.showMenu();
             int choice = scanner.nextInt();
-        
-            if (choice == 1 && !isConnected) {
-                client.start();
-                isConnected = true;
-                System.out.println("Connected to server");
-            } else if (choice == 2 && isConnected) {
-                client.stop();
-                isConnected = false;
-                System.out.println("Disconnected from server");
-            } else if (choice == 3 && isConnected) {
-                client.getFoodProducts();
-            } else {
-                System.out.println("Invalid option or operation");
+    
+            switch (choice) {
+                case 1:
+                    if (!isConnected) {
+                        client = new Client("localhost", 1234); // Create a new Client instance
+                        client.start();
+                        isConnected = true;
+                    } else {
+                        System.out.println("Already connected to the server.");
+                    }
+                    break;
+                case 2:
+                    if (isConnected) {
+                        client.stop();
+                        isConnected = false;
+                    } else {
+                        System.out.println("Not connected to the server.");
+                    }
+                    break;
+                case 3:
+                    if (isConnected) {
+                        client.getFoodProducts();
+                    } else {
+                        System.out.println("Not connected to the server.");
+                    }
+                    break;
+                case 4:
+                    System.out.println("Exiting...");
+                    return;
+                default:
+                    System.out.println("Invalid choice. Please choose again.");
             }
-        
         }
     }
 }
