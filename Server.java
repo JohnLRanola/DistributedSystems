@@ -33,15 +33,17 @@ public class Server {
                 OutputStream output = clientSocket.getOutputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
                 PrintWriter writer = new PrintWriter(output, true);
-
-                // Read the first message from the client, which should be its ID
                 clientId = reader.readLine();
                 System.out.println("Client connected: " + clientId);
-
+        
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println("Received from client " + clientId + ": " + line);
-                    writer.println("Echo from server: " + line);
+                    if ("GET_FOOD_PRODUCTS".equals(line)) {
+                        writer.println("Apple, Banana, Carrot, Doughnut, Egg");
+                    } else {
+                        System.out.println("Received from client " + clientId + ": " + line);
+                        writer.println("Echo from server: " + line);
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("Error in ClientHandler: " + e.getMessage());
