@@ -1,13 +1,40 @@
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.util.*;
 
 public class Client {
-    private static int clientCount = 0; // This will keep track of the number of clients
-    private int clientId; // This will store the ID of this client
+    private static int clientCount = 0;
+    private int clientId;
+    private Timer timer;
+    private int countdown = 60;
 
     public Client() {
-        clientId = ++clientCount; // Increment the client count and assign it as this client's ID
+        clientId = ++clientCount;
+        timer = new Timer();
+    }
+
+    public void startProductUpdates(BufferedReader input, PrintWriter output) {
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                output.println("getProducts");
+                try {
+                    String serverResponse = input.readLine();
+                    System.out.println("Received product list from server: " + serverResponse);
+                } catch (IOException e) {
+                    System.out.println("Error reading from server: " + e.getMessage());
+                }
+                countdown = 60;
+            }
+        }, 0, 60000);
+
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Time until next product update: " + countdown + " seconds");
+                countdown--;
+            }
+        }, 0, 1000);
     }
 
     public static void main(String[] args) throws IOException {
@@ -25,15 +52,16 @@ public class Client {
 
             switch (choice) {
                 case 1: // Connect to the server
-                if (socket == null) {
-                    socket = new Socket("localhost", 8000);
-                    output = new PrintWriter(socket.getOutputStream(), true);
-                    input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    System.out.println("Connected to the server with ID: " + input.readLine()); // Print the client ID
-                } else {
-                    System.out.println("Already connected to the server.");
-                }
-                break;
+                    if (socket == null) {
+                        socket = new Socket("localhost", 8000);
+                        output = new PrintWriter(socket.getOutputStream(), true);
+                        input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                        System.out.println("Connected to the server with ID: " + input.readLine()); // Print the client ID
+                        client.startProductUpdates(input, output);
+                    } else {
+                        System.out.println("Already connected to the server.");
+                    }
+                    break;
 
                 case 2: // Disconnect from the server
                     if (socket != null) {
@@ -47,7 +75,7 @@ public class Client {
                     }
                     break;
 
-                    case 3: // Request product list from client2
+                case 3: // Request product list from client2
                     if (socket != null) {
                         output.println("getProducts"); // Send a request to the server for the list of products
                         String serverResponse = input.readLine(); // Read the server's response
@@ -58,16 +86,7 @@ public class Client {
                     break;
 
                 case 4: // Quit
-                    if (socket != null) {
-                        output.close();
-                        input.close();
-                        socket.close();
-                    }
                     System.exit(0);
-                    break;
-
-                default:
-                    System.out.println("Invalid choice. Please enter 1, 2, or 3.");
                     break;
             }
         }
