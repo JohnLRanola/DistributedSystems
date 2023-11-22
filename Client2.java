@@ -83,4 +83,25 @@ class ClientHandler extends Thread {
     public void sendProduct(String product) {
         output.println("Next product: " + product);
     }
+
+    @Override
+    public void run() {
+        try (BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            String request;
+            while ((request = input.readLine()) != null) {
+                handleClientRequest(request);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void handleClientRequest(String request) {
+        if ("getProducts".equals(request)) {
+            String productList = products.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining(", "));
+            output.println(productList);
+        }
+    }
 }
