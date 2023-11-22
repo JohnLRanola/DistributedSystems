@@ -32,6 +32,10 @@ public class Client2 {
         return productNames.get(currentProductIndex);
     }
 
+    public static int getRemainingTime() {
+        return countdown;
+    }
+    
     public void startBroadcast() {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -42,7 +46,16 @@ public class Client2 {
                     for (ClientHandler client : clients) {
                         client.sendProduct(productNames.get(currentProductIndex));
                     }
-                } else {
+                    // Notify Client2 about the current product and its quantity
+                    String currentProduct = productNames.get(currentProductIndex);
+                    int currentQuantity = products.get(currentProduct);
+                    System.out.println("Current product on sale: " + currentProduct + ", Quantity left: " + currentQuantity);
+                } else if (countdown == 30) {
+                    // Notify Client2 about the current product and its quantity
+                    String currentProduct = productNames.get(currentProductIndex);
+                    int currentQuantity = products.get(currentProduct);
+                    System.out.println("30 seconds left. Current product on sale: " + currentProduct + ", Quantity left: " + currentQuantity);
+                } else if (countdown <= 10) {
                     for (ClientHandler client : clients) {
                         client.sendCountdown(countdown);
                     }
@@ -79,6 +92,10 @@ class ClientHandler extends Thread {
         this.clientId = clientId;
         this.output = new PrintWriter(socket.getOutputStream(), true);
         output.println("Connected to the server with ID: " + clientId); // Send the client ID
+        String currentProduct = Client2.getCurrentProduct(); // Get the current product
+        output.println("Current product on sale: " + currentProduct); // Send the current product
+        int remainingTime = Client2.getRemainingTime(); // Get the remaining time
+        output.println("Time left for current product: " + remainingTime + " seconds"); // Send the remaining time
     }
 
     public void sendCountdown(int countdown) {
