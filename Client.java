@@ -1,74 +1,52 @@
 import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Client {
-    private static int clientCount = 0;
-    private int clientId;
-    private Timer timer;
-    private int countdown = 60;
-
-    public Client() {
-        clientId = ++clientCount;
-        timer = new Timer();
-    }
-
-    public void startProductUpdates(BufferedReader input, PrintWriter output) {
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                output.println("getProducts");
-                try {
-                    String serverResponse = input.readLine();
-                    System.out.println("Received product list from server: " + serverResponse);
-                } catch (IOException e) {
-                    System.out.println("Error reading from server: " + e.getMessage());
-                }
-                countdown = 60;
-            }
-        }, 0, 60000);
-
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println("Time until next product update: " + countdown + " seconds");
-                countdown--;
-            }
-        }, 0, 1000);
-    }
+    private Socket socket = null;
+    private PrintWriter output = null;
+    private BufferedReader input = null;
+    private Timer timer = new Timer();
+    private Iterator<String> productIterator;
+    private int countdown = 60; // Declare countdown at the class level
 
     public static void main(String[] args) throws IOException {
-        Client client = new Client(); // Create a new client
-        System.out.println("Client ID: " + client.clientId); // Print the client ID
-
+        Client client = new Client();
         Scanner scanner = new Scanner(System.in);
-        Socket socket = null;
-        PrintWriter output = null;
-        BufferedReader input = null;
 
         while (true) {
-            System.out.println("Enter 1 to connect to the server, 2 to disconnect, or 3 to show list or 4 to quit:");
+            System.out.println("1. Connect to the server");
+            System.out.println("2. Disconnect from the server");
+            System.out.println("3. Request product list from client2");
+            System.out.println("4. Quit");
+            System.out.print("Enter your choice: ");
+
             int choice = scanner.nextInt();
 
             switch (choice) {
                 case 1: // Connect to the server
-                    if (socket == null) {
-                        socket = new Socket("localhost", 8000);
-                        output = new PrintWriter(socket.getOutputStream(), true);
-                        input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        System.out.println("Connected to the server with ID: " + input.readLine()); // Print the client ID
-                        client.startProductUpdates(input, output);
+                    if (client.socket == null) {
+                        client.socket = new Socket("localhost", 8000);
+                        client.output = new PrintWriter(client.socket.getOutputStream(), true);
+                        client.input = new BufferedReader(new InputStreamReader(client.socket.getInputStream()));
+                        System.out.println("Connected to the server with ID: " + client.input.readLine()); // Print the client ID
+                        client.startProductUpdates(client.input, client.output);
                     } else {
                         System.out.println("Already connected to the server.");
                     }
                     break;
 
                 case 2: // Disconnect from the server
-                    if (socket != null) {
-                        output.close();
-                        input.close();
-                        socket.close();
-                        socket = null;
+                    if (client.socket != null) {
+                        client.output.close();
+                        client.input.close();
+                        client.socket.close();
+                        client.socket = null;
                         System.out.println("Disconnected from the server.");
                     } else {
                         System.out.println("Not connected to any server.");
@@ -76,9 +54,9 @@ public class Client {
                     break;
 
                 case 3: // Request product list from client2
-                    if (socket != null) {
-                        output.println("getProducts"); // Send a request to the server for the list of products
-                        String serverResponse = input.readLine(); // Read the server's response
+                    if (client.socket != null) {
+                        client.output.println("getProducts"); // Send a request to the server for the list of products
+                        String serverResponse = client.input.readLine(); // Read the server's response
                         System.out.println("Received product list from server: " + serverResponse);
                     } else {
                         System.out.println("Not connected to any server.");
@@ -90,5 +68,35 @@ public class Client {
                     break;
             }
         }
+    }
+
+    public void startProductUpdates(BufferedReader input, PrintWriter output) {
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                output.println("getProducts");
+                try {
+                    String serverResponse = input.readLine();
+                    List<String> products = Arrays.asList(serverResponse.split(","));
+                    if (productIterator == null || !productIterator.hasNext()) {
+                        productIterator = products.iterator();
+                    }
+                    if (productIterator.hasNext()) {
+                        System.out.println("Received product from server: " + productIterator.next());
+                    }
+                    countdown = 60; // Reset the countdown
+                } catch (IOException e) {
+                    System.out.println("Error reading from server: " + e.getMessage());
+                }
+            }
+        }, 0, 60000);
+
+        // Schedule a task to print the countdown every second
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Next product in: " + countdown-- + " seconds");
+            }
+        }, 0, 1000);
     }
 }

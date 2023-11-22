@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Client2 {
     private static int clientCount = 0; // This will keep track of the number of clients
@@ -41,7 +42,7 @@ class ClientHandler extends Thread {
         this.clientId = clientId;
     }
 
-public void run() {
+    public void run() {
         try {
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
@@ -53,7 +54,10 @@ public void run() {
             while ((clientMessage = input.readLine()) != null) {
                 System.out.println("Received message: " + clientMessage);
                 if ("getProducts".equals(clientMessage)) {
-                    output.println(products.toString()); // Send the product list when a "getProducts" request is received
+                    String productList = products.entrySet().stream()
+                        .map(entry -> entry.getKey() + "=" + entry.getValue())
+                        .collect(Collectors.joining(", "));
+                    output.println(productList); // Send the product list when a "getProducts" request is received
                 }
             }
             socket.close();
