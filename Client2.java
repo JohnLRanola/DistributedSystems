@@ -4,17 +4,23 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Client2 {
-    private static int clientCount = 0; // This will keep track of the number of clients
-    private Map<String, Integer> products = new HashMap<>(); // This will store the food products and their quantities
-    private List<ClientHandler> clients = new ArrayList<>(); // This will store all connected clients
+    private static int clientCount = 0;
+    private Map<String, Integer> products = new HashMap<>();
+    private List<ClientHandler> clients = new ArrayList<>();
     private Timer timer = new Timer();
     private int countdown = 60;
+
+    private List<String> productNames = new ArrayList<>();
+    private int currentProductIndex = 0;
 
     public Client2() {
         products.put("Flower", 10);
         products.put("Sugar", 20);
         products.put("Potato", 30);
         products.put("Oil", 15);
+
+        productNames.addAll(products.keySet());
+
         startBroadcast();
     }
 
@@ -26,13 +32,18 @@ public class Client2 {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                for (ClientHandler client : clients) {
-                    client.sendCountdown(countdown);
-                }
-                countdown--;
                 if (countdown < 0) {
                     countdown = 60;
+                    currentProductIndex = (currentProductIndex + 1) % productNames.size();
+                    for (ClientHandler client : clients) {
+                        client.sendProduct(productNames.get(currentProductIndex));
+                    }
+                } else {
+                    for (ClientHandler client : clients) {
+                        client.sendCountdown(countdown);
+                    }
                 }
+                countdown--;
             }
         }, 0, 1000);
     }
@@ -47,7 +58,7 @@ public class Client2 {
             System.out.println("A new client has connected.");
             ClientHandler clientHandler = new ClientHandler(socket, ++clientCount);
             client2.clients.add(clientHandler);
-            clientHandler.start(); // Increment clientCount and pass it to the ClientHandler
+            clientHandler.start();
         }
     }
 }
@@ -55,7 +66,7 @@ public class Client2 {
 class ClientHandler extends Thread {
     private Socket socket;
     private Map<String, Integer> products;
-    private int clientId; // This will store the ID of this client
+    private int clientId;
     private PrintWriter output;
 
     public ClientHandler(Socket socket, int clientId) throws IOException {
@@ -67,5 +78,9 @@ class ClientHandler extends Thread {
 
     public void sendCountdown(int countdown) {
         output.println("Next product in: " + countdown + " seconds");
+    }
+
+    public void sendProduct(String product) {
+        output.println("Next product: " + product);
     }
 }
