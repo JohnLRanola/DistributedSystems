@@ -5,13 +5,13 @@ import java.util.stream.Collectors;
 
 public class Client2 {
     private static int clientCount = 0;
-    private Map<String, Integer> products = new HashMap<>();
-    private List<ClientHandler> clients = new ArrayList<>();
-    private Timer timer = new Timer();
-    private int countdown = 60;
+    private static Map<String, Integer> products = Collections.synchronizedMap(new HashMap<>());
+    private static List<ClientHandler> clients = new ArrayList<>();
+    private static Timer timer = new Timer();
+    private static int countdown = 60;
 
-    private List<String> productNames = new ArrayList<>();
-    private int currentProductIndex = 0;
+    private static List<String> productNames = new ArrayList<>();
+    private static int currentProductIndex = 0;
 
     public Client2() {
         products.put("Flower", 10);
@@ -25,7 +25,11 @@ public class Client2 {
     }
 
     public static Map<String, Integer> getProducts() {
-        return new Client2().products;
+        return products;
+    }
+    
+    public static String getCurrentProduct() {
+        return productNames.get(currentProductIndex);
     }
 
     public void startBroadcast() {
@@ -97,12 +101,22 @@ class ClientHandler extends Thread {
         }
     }
 
-    public void handleClientRequest(String request) {
+public void handleClientRequest(String request) {
         if ("getProducts".equals(request)) {
-            String productList = products.entrySet().stream()
+            String productList = Client2.getProducts().entrySet().stream()
                 .map(entry -> entry.getKey() + ": " + entry.getValue())
                 .collect(Collectors.joining(", "));
             output.println(productList);
+        } else if (request.startsWith("buyProduct:")) {
+            int quantity = Integer.parseInt(request.split(":")[1]);
+            String currentProduct = Client2.getCurrentProduct(); // Get the current product
+            Integer currentQuantity = Client2.getProducts().get(currentProduct);
+            if (currentQuantity != null && currentQuantity >= quantity) {
+                Client2.getProducts().put(currentProduct, currentQuantity - quantity);
+                output.println("You bought " + quantity + " " + currentProduct);
+            } else {
+                output.println("Insufficient quantity of " + currentProduct);
+            }
         }
     }
 }
