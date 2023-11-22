@@ -2,66 +2,46 @@ import java.io.*;
 import java.net.*;
 
 public class Server {
-    private static int idCounter = 0;
-    private ServerSocket serverSocket;
+    public static void main(String[] args) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(8000);
+        System.out.println("Server is running...");
 
-    public Server(int port) throws IOException {
-        serverSocket = new ServerSocket(port);
-    }
-
-    public void start() throws IOException {
         while (true) {
-            Socket clientSocket = serverSocket.accept();
-            int clientId = ++idCounter;
-            PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
-            writer.println(clientId); // Send clientId back to the client
-            new ClientHandler(clientSocket).start();
+            Socket socket = serverSocket.accept();
+            System.out.println("A new client has connected.");
+            new ClientHandler(socket).start();
         }
     }
+}
 
-    private static class ClientHandler extends Thread {
-        private Socket clientSocket;
+class ClientHandler extends Thread {
+    private Socket socket;
+    private static String productList; // Add this line
 
-        public ClientHandler(Socket socket) {
-            this.clientSocket = socket;
-        }
+    public ClientHandler(Socket socket) {
+        this.socket = socket;
+    }
 
-        public void run() {
-            String clientId = null;
-            try {
-                InputStream input = clientSocket.getInputStream();
-                OutputStream output = clientSocket.getOutputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                PrintWriter writer = new PrintWriter(output, true);
-                clientId = reader.readLine();
-                System.out.println("Client connected: " + clientId);
-        
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if ("GET_FOOD_PRODUCTS".equals(line)) {
-                        writer.println("Apple, Banana, Carrot, Doughnut, Egg");
-                    } else {
-                        System.out.println("Received from client " + clientId + ": " + line);
-                        writer.println("Echo from server: " + line);
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("Error in ClientHandler: " + e.getMessage());
-            } finally {
-                try {
-                    clientSocket.close();
-                    if (clientId != null) {
-                        System.out.println("Client disconnected: " + clientId);
-                    }
-                } catch (IOException e) {
-                    System.out.println("Couldn't close a socket, what's going on?");
-                }
+public void run() {
+    try {
+        BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+        String clientMessage;
+        while ((clientMessage = input.readLine()) != null) {
+            System.out.println("Received message: " + clientMessage);
+            if ("getProducts".equals(clientMessage)) {
+                output.println(productList); // Send the product list when a "getProducts" request is received
+            } else {
+                productList = clientMessage; // Store the list of products
             }
         }
+        socket.close();
+    } catch (IOException e) {
+        System.out.println("Error in ClientHandler: " + e.getMessage());
     }
+}
 
-    public static void main(String[] args) throws IOException {
-        Server server = new Server(1234);
-        server.start();
+    public static String getProductList() { // Add this method
+        return productList;
     }
 }
