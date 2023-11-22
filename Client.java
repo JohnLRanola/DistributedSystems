@@ -29,7 +29,7 @@ public class Client {
                     socket = new Socket("localhost", 8000);
                     output = new PrintWriter(socket.getOutputStream(), true);
                     input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    System.out.println("Connected to the server.");
+                    System.out.println("Connected to the server with ID: " + input.readLine()); // Print the client ID
                 } else {
                     System.out.println("Already connected to the server.");
                 }

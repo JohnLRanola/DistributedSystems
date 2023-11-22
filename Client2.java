@@ -2,77 +2,63 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 public class Client2 {
     private static int clientCount = 0; // This will keep track of the number of clients
-    private int clientId; // This will store the ID of this client
-    private static Map<String, Integer> products = new HashMap<>();  // This will store the food products and their quantities
+    private Map<String, Integer> products = new HashMap<>(); // This will store the food products and their quantities
 
     public Client2() {
-        clientId = ++clientCount; // Increment the client count and assign it as this client's ID
-        products.put("flower", 4); // Add the food products with initial quantity 0
-        products.put("sugar", 10);
-        products.put("potato", 5);
-        products.put("soil", 3);
+        products.put("Flower", 10);
+        products.put("Sugar", 20);
+        products.put("Potato", 30);
+        products.put("Oil", 15);
     }
 
     public static Map<String, Integer> getProducts() {
-        return products;
+        return new Client2().products;
     }
 
     public static void main(String[] args) throws IOException {
-        Client2 client = new Client2(); // Create a new client
-        System.out.println("Client ID: " + client.clientId); // Print the client ID
-        System.out.println("Products: " + client.products); // Print the products and their quantities
-
-        Scanner scanner = new Scanner(System.in);
-        Socket socket = null;
-        PrintWriter output = null;
-        BufferedReader input = null;
+        ServerSocket serverSocket = new ServerSocket(8000);
+        System.out.println("Server is running...");
 
         while (true) {
-            System.out.println("Enter 1 to connect to the server, 2 to disconnect, or 3 to quit:");
-            int choice = scanner.nextInt();
+            Socket socket = serverSocket.accept();
+            System.out.println("A new client has connected.");
+            new ClientHandler(socket, ++clientCount).start(); // Increment clientCount and pass it to the ClientHandler
+        }
+    }
+}
 
-            switch (choice) {
-                case 1: // Connect to the server
-                if (socket == null) {
-                    socket = new Socket("localhost", 8000);
-                    output = new PrintWriter(socket.getOutputStream(), true);
-                    input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    output.println(client.products.toString()); // Send the list of products to the server
-                    System.out.println("Connected to the server.");
-                } else {
-                    System.out.println("Already connected to the server.");
+class ClientHandler extends Thread {
+    private Socket socket;
+    private Map<String, Integer> products;
+    private int clientId; // This will store the ID of this client
+
+    public ClientHandler(Socket socket, int clientId) {
+        this.socket = socket;
+        this.products = Client2.getProducts();
+        this.clientId = clientId;
+    }
+
+public void run() {
+        try {
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+
+            // Send a welcome message to the client including the client ID
+            output.println("Welcome, you are connected as client ID: " + clientId);
+
+            String clientMessage;
+            while ((clientMessage = input.readLine()) != null) {
+                System.out.println("Received message: " + clientMessage);
+                if ("getProducts".equals(clientMessage)) {
+                    output.println(products.toString()); // Send the product list when a "getProducts" request is received
                 }
-                break;
-
-                case 2: // Disconnect from the server
-                    if (socket != null) {
-                        output.close();
-                        input.close();
-                        socket.close();
-                        socket = null;
-                        System.out.println("Disconnected from the server.");
-                    } else {
-                        System.out.println("Not connected to any server.");
-                    }
-                    break;
-
-                case 3: // Quit
-                    if (socket != null) {
-                        output.close();
-                        input.close();
-                        socket.close();
-                    }
-                    System.exit(0);
-                    break;
-
-                default:
-                    System.out.println("Invalid choice. Please enter 1, 2, or 3.");
-                    break;
             }
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Error in ClientHandler: " + e.getMessage());
         }
     }
 }
