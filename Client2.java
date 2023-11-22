@@ -74,6 +74,7 @@ class ClientHandler extends Thread {
         this.products = Client2.getProducts();
         this.clientId = clientId;
         this.output = new PrintWriter(socket.getOutputStream(), true);
+        output.println("Connected to the server with ID: " + clientId); // Send the client ID
     }
 
     public void sendCountdown(int countdown) {
