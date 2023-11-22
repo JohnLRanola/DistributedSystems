@@ -1,15 +1,12 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Scanner;
 
 public class Client {
     private Socket socket = null;
     private PrintWriter output = null;
     private BufferedReader input = null;
-    private Iterator<String> productIterator;
+    private boolean isRunning = false;
 
     public static void main(String[] args) throws IOException {
         Client client = new Client();
@@ -20,7 +17,7 @@ public class Client {
             System.out.println("2. Disconnect from the server");
             System.out.println("3. Request product list from client2");
             System.out.println("4. Buy a product");
-            System.out.println("5. Buy a product");
+            System.out.println("5. Quit");
             System.out.print("Enter your choice: ");
 
             int choice = scanner.nextInt();
@@ -32,6 +29,7 @@ public class Client {
                         client.output = new PrintWriter(client.socket.getOutputStream(), true);
                         client.input = new BufferedReader(new InputStreamReader(client.socket.getInputStream()));
                         System.out.println(client.input.readLine()); // Print the client ID
+                        client.isRunning = true;
                         client.startListening();
                     } else {
                         System.out.println("Already connected to the server.");
@@ -44,6 +42,7 @@ public class Client {
                         client.input.close();
                         client.socket.close();
                         client.socket = null;
+                        client.isRunning = false;
                         System.out.println("Disconnected from the server.");
                     } else {
                         System.out.println("Not connected to any server.");
@@ -59,14 +58,14 @@ public class Client {
                     break;
 
                 case 4: // Buy a product
-                if (client.socket != null) {
-                    System.out.print("Enter the quantity: ");
-                    int quantity = scanner.nextInt();
-                    client.output.println("buyProduct:" + quantity); // Send a request to the server to buy a product
-                } else {
-                    System.out.println("Not connected to any server.");
-                }
-                break;
+                    if (client.socket != null) {
+                        System.out.print("Enter the quantity: ");
+                        int quantity = scanner.nextInt();
+                        client.output.println("buyProduct:" + quantity); // Send a request to the server to buy a product
+                    } else {
+                        System.out.println("Not connected to any server.");
+                    }
+                    break;
 
                 case 5: // Quit
                     System.exit(0);
@@ -77,9 +76,10 @@ public class Client {
 
     public void startListening() {
         new Thread(() -> {
-            while (true) {
+            while (isRunning) {
                 try {
                     String serverMessage = input.readLine();
+                    if (serverMessage == null) break;
                     System.out.println(serverMessage);
                 } catch (IOException e) {
                     System.out.println("Error reading from server: " + e.getMessage());

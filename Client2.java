@@ -27,7 +27,7 @@ public class Client2 {
     public static Map<String, Integer> getProducts() {
         return products;
     }
-    
+
     public static String getCurrentProduct() {
         return productNames.get(currentProductIndex);
     }
@@ -89,6 +89,11 @@ class ClientHandler extends Thread {
         output.println("Next product: " + product);
     }
 
+    public void notifyPurchase(int clientId, int quantity, String product) {
+        String message = "Client " + clientId + " bought " + quantity + " of " + product;
+        System.out.println(message);
+    }
+
     @Override
     public void run() {
         try (BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
@@ -101,7 +106,7 @@ class ClientHandler extends Thread {
         }
     }
 
-public void handleClientRequest(String request) {
+    public void handleClientRequest(String request) {
         if ("getProducts".equals(request)) {
             String productList = Client2.getProducts().entrySet().stream()
                 .map(entry -> entry.getKey() + ": " + entry.getValue())
@@ -114,6 +119,7 @@ public void handleClientRequest(String request) {
             if (currentQuantity != null && currentQuantity >= quantity) {
                 Client2.getProducts().put(currentProduct, currentQuantity - quantity);
                 output.println("You bought " + quantity + " " + currentProduct);
+                notifyPurchase(clientId, quantity, currentProduct); // Notify purchase
             } else {
                 output.println("Insufficient quantity of " + currentProduct);
             }
