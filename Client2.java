@@ -35,7 +35,15 @@ public class Client2 {
     public static int getRemainingTime() {
         return countdown;
     }
-    
+
+    public static List<String> getProductNames() {
+        return productNames;
+    }
+
+    public static List<ClientHandler> getClients() {
+        return clients;
+    }
+
     public void startBroadcast() {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -134,11 +142,25 @@ class ClientHandler extends Thread {
             String currentProduct = Client2.getCurrentProduct(); // Get the current product
             Integer currentQuantity = Client2.getProducts().get(currentProduct);
             if (currentQuantity != null && currentQuantity >= quantity) {
-                Client2.getProducts().put(currentProduct, currentQuantity - quantity);
-                output.println("You bought " + quantity + " " + currentProduct);
+                int newQuantity = currentQuantity - quantity;
+                if (newQuantity == 0) {
+                    Client2.getProducts().remove(currentProduct);
+                    Client2.getProductNames().remove(currentProduct);
+                    output.println("You bought the last " + quantity + " " + currentProduct + ". This product is now out of stock.");
+                    System.out.println("Product " + currentProduct + " is now out of stock.");
+                    for (ClientHandler client : Client2.getClients()) {
+                        client.output.println("Product " + currentProduct + " is now out of stock.");
+                    }
+                } else {
+                    Client2.getProducts().put(currentProduct, newQuantity);
+                    output.println("You bought " + quantity + " " + currentProduct);
+                    for (ClientHandler client : Client2.getClients()) {
+                        client.output.println("Product " + currentProduct + " has " + newQuantity + " left in stock.");
+                    }
+                }
                 notifyPurchase(clientId, quantity, currentProduct); // Notify purchase
             } else {
-                output.println("Insufficient quantity of " + currentProduct);
+                output.println("Insufficient quantity of " + currentProduct + ". Purchase not allowed.");
             }
         }
     }
