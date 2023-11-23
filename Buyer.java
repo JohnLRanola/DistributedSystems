@@ -2,28 +2,28 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class Client {
+public class Buyer {
     private Socket socket = null;
     private PrintWriter output = null;
     private BufferedReader input = null;
     private boolean isRunning = false;
 
     public static void main(String[] args) throws IOException {
-        Client client = new Client();
+        Buyer client = new Buyer();
         Scanner scanner = new Scanner(System.in);
 
         while (true) {
-            System.out.println("1. Connect to the server");
-            System.out.println("2. Disconnect from the server");
-            System.out.println("3. Request product list from client2");
-            System.out.println("4. Buy a product");
-            System.out.println("5. Quit");
+            System.out.println("1. Join Market");
+            System.out.println("2. Leave Market");
+            System.out.println("3. List Products");
+            System.out.println("4. Buy a Product");
             System.out.print("Enter your choice: ");
 
             int choice = scanner.nextInt();
 
             switch (choice) {
-                case 1: // Connect to the server
+                // Connect to the server
+                case 1: 
                     if (client.socket == null) {
                         client.socket = new Socket("localhost", 8000);
                         client.output = new PrintWriter(client.socket.getOutputStream(), true);
@@ -32,50 +32,54 @@ public class Client {
                         client.isRunning = true;
                         client.startListening();
                     } else {
-                        System.out.println("Already connected to the server.");
+                        System.out.println("You're already in the market.");
                     }
                     break;
 
-                case 2: // Disconnect from the server
+                // Disconnect from the server
+                case 2: 
                     if (client.socket != null) {
                         client.output.close();
                         client.input.close();
                         client.socket.close();
                         client.socket = null;
                         client.isRunning = false;
-                        System.out.println("Disconnected from the server.");
+                        System.out.println("You left the Market.");
                     } else {
-                        System.out.println("Not connected to any server.");
+                        System.out.println("You haven't joined a Market.");
                     }
                     break;
 
-                case 3: // Request product list from client2
+                // List products from Seller
+                case 3: 
                     if (client.socket != null) {
-                        client.output.println("getProducts"); // Send a request to the server for the list of products
+                        // Requests seller for list of products
+                        client.output.println("getProducts");
                     } else {
-                        System.out.println("Not connected to any server.");
+                        System.out.println("You haven't joined a Market.");
                     }
                     break;
 
-                case 4: // Buy a product
+                // Buy a product from Seller
+                case 4: 
                     if (client.socket != null) {
                         System.out.print("Enter the quantity: ");
                         int quantity = scanner.nextInt();
-                        client.output.println("buyProduct:" + quantity); // Send a request to the server to buy a product
+                        // Requests seller to buy a product
+                        client.output.println("buyProduct:" + quantity); 
                     } else {
-                        System.out.println("Not connected to any server.");
+                        System.out.println("You haven't joined a Market.");
                     }
                     break;
 
-                case 5: // Quit
-                    System.exit(0);
-                    break;
             }
         }
     }
 
+    // This code creates a new thread that listens for messages from the server.
     public void startListening() {
         new Thread(() -> {
+            // The code reads a line of text from Seller and if the Seller sends a null message the loop breaks
             while (isRunning) {
                 try {
                     String serverMessage = input.readLine();
